@@ -74,6 +74,4 @@ ENV PATH $PATH:/root/tools/google-cloud-sdk/bin
 RUN echo '[GoogleCompute]\nservice_account = default' > /etc/boto.cfg
 
 # Train the model
-RUN ./darknet detector train cfg/voc.data cfg/yolov3-voc.cfg darknet53.conv.7
-
-# fuck ENTRYPOINT and CMD honestly. somebody probably needs that but I don't.
+ENTRYPOINT ["./darknet", "detector", "train", "cfg/voc.data", "cfg/yolov3-voc.cfg", "darknet53.conv.7"]
