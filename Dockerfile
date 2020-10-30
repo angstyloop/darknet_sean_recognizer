@@ -1,14 +1,50 @@
-# s: I borrowed this
-
-# GPU image
+# GPU Docker image
 FROM nvidia/cuda:9.0-cudnn7-runtime
 
-# Install dependencies
-RUN apt-get update && apt-get install -y --no-install-recommends wget curl && \
+# Installs necessary dependencies.
+RUN apt-get update && apt-get install -y --no-install-recommends \
+         wget \
+         curl \
+         tar \
+         git-all \
+         make \
+         python-dev && \
      rm -rf /var/lib/apt/lists/*
 
-# Install Darknet
-# ...
+ # Installs pip.
+ # s: mine will be different
+ RUN curl https://bootstrap.pypa.io/get-pip.py -o get-pip.py && \
+     python get-pip.py && \
+     pip install setuptools && \
+     rm get-pip.py
+
+WORKDIR /root
+
+# Install Darknet (https://pjreddie.com/darknet/yolo/)
+RUN git clone https://github.com/pjreddie/darknet && \
+    cd darknet && \
+    make
+
+# Get pascal VOC data
+RUN wget https://pjreddie.com/media/files/VOCtrainval_11-May-2012.tar && \
+    wget https://pjreddie.com/media/files/VOCtrainval_06-Nov-2007.tar && \
+    wget https://pjreddie.com/media/files/VOCtest_06-Nov-2007.tar && \
+    tar xf VOCtrainval_11-May-2012.tar && \
+    tar xf VOCtrainval_06-Nov-2007.tar && \
+    tar xf VOCtest_06-Nov-2007.tar
+
+# Generate labels for VOC
+RUN wget https://pjreddie.com/media/files/voc_label.py && \
+python voc_label.py
+
+# Concatenate training data, except for 2007
+RUN cat 2007_train.txt 2007_val.txt 2012_*.txt > train.txt
+
+# Modify cfg for Pascal VOC data
+echo "classes = 20\ntrain = ./train.txt\nvalid = ./2007_test.txt\nnames = data/voc.names\nbackup = backup"
+
+# Download pre-trained weights
+wget https://pjreddie.com/media/files/darknet53.conv.74
 
 # Installs cloudml-hypertune for hyperparameter tuning.
 # It’s not needed if you don’t want to do hyperparameter tuning.
@@ -30,17 +66,14 @@ RUN wget -nv \
     # Remove the backup directory that gcloud creates
     rm -rf /root/tools/google-cloud-sdk/.install/.backup
 
-# Path configuration
-# s: use this as-is
+# Configure PATH
 ENV PATH $PATH:/root/tools/google-cloud-sdk/bin
 
-# Make sure gsutil will use the default service account
-# s: figure out how to configure your google default service account
+# Configure boto file for gsutil to use the default service account.
+# s: Development only. For production, use a user-managed google service account
 RUN echo '[GoogleCompute]\nservice_account = default' > /etc/boto.cfg
 
-# Copy executable (that starts training the network) and its resources into the docker image.
-# ...
+# Train the model
+RUN ./darknet detector train cfg/voc.data cfg/yolov3-voc.cfg darknet53.conv.7
 
-# Set up the entry point to invoke the trainer.
-# ...
-
+# fuck ENTRYPOINT and CMD honestly. somebody probably needs that but I don't.
