@@ -1,42 +1,14 @@
 # s: I borrowed this
 
-# Copyright 2019 Google LLC
-#
-# Licensed under the Apache License, Version 2.0 (the \"License\");
-# you may not use this file except in compliance with the License.\n",
-# You may obtain a copy of the License at
-#
-#     http://www.apache.org/licenses/LICENSE-2.0
-#
-# Unless required by applicable law or agreed to in writing, software
-# distributed under the License is distributed on an \"AS IS\" BASIS,
-# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-# See the License for the specific language governing permissions and
-# limitations under the License.
-
-# Dockerfile-gpu
+# GPU image
 FROM nvidia/cuda:9.0-cudnn7-runtime
 
-# Installs necessary dependencies.
-# s: mine will be different
-RUN apt-get update && apt-get install -y --no-install-recommends \
-         wget \
-         curl \
-         python-dev && \
+# Install dependencies
+RUN apt-get update && apt-get install -y --no-install-recommends wget curl && \
      rm -rf /var/lib/apt/lists/*
 
-# Installs pip.
-# s: mine will be different
-RUN curl https://bootstrap.pypa.io/get-pip.py -o get-pip.py && \
-    python get-pip.py && \
-    pip install setuptools && \
-    rm get-pip.py
-
-WORKDIR /root
-
-# Installs pytorch and torchvision.
-# s: mine will be different
-RUN pip install torch==1.0.0 torchvision==0.2.1
+# Install Darknet
+# ...
 
 # Installs cloudml-hypertune for hyperparameter tuning.
 # It’s not needed if you don’t want to do hyperparameter tuning.
@@ -66,12 +38,9 @@ ENV PATH $PATH:/root/tools/google-cloud-sdk/bin
 # s: figure out how to configure your google default service account
 RUN echo '[GoogleCompute]\nservice_account = default' > /etc/boto.cfg
 
-# Copies the trainer code 
-# s: mine will be different 
-RUN mkdir /root/trainer
-COPY trainer/mnist.py /root/trainer/mnist.py
+# Copy executable (that starts training the network) and its resources into the docker image.
+# ...
 
-# Sets up the entry point to invoke the trainer.
-# s: mine will be different 
-ENTRYPOINT ["python", "trainer/mnist.py"]
+# Set up the entry point to invoke the trainer.
+# ...
 
